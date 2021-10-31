@@ -34,7 +34,7 @@ assert_file build.sh
 srcdir="$CWD/src"
 outdir="$CWD/out"
 pkgdir="$outdir/$pkgname-$pkgver"
-pkgfile="$outdir/$pkgname-$pkgver.tar.zst"
+pkgfile="$outdir/$pkgname.$pkgver.tar.zst"
 
 genmeta() {
 	echo "[pkg]"
@@ -106,6 +106,8 @@ else
 	pkgmetafile="$pkgdir/usr/share/iglupkg/$pkgname"
 
 	genmeta > "$pkgmetafile"
+
+	cd "$pkgdir"
 
 	tar -I zstd -cf "$pkgfile" *
 fi
