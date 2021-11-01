@@ -79,6 +79,8 @@ assert_file build.sh
 
 . ./build.sh
 
+[ -n "$pkgname" ] || fatal "build.sh not sane: pkgname not defined"
+[ -n "$pkgver" ] || fatal "build.sh not sane: pkgver not defined"
 assert_func fetch
 assert_func build
 assert_func package
