@@ -2,6 +2,11 @@
 
 CWD="$(pwd)"
 
+export CC=cc
+export CXX=c++
+export ARCH="$(uname -m)"
+export TRIPLE="$ARCH-unknown-linux-musl"
+
 fatal() {
 	echo "ERROR: $@"
 	exit 1
@@ -19,21 +24,70 @@ assert_file() {
 	fatal "$1 does not exist!"
 }
 
+assert_func() {
+	command -V "$1" \
+	> /dev/null \
+	2> /dev/null && return
+	fatal "build.sh not sane: $1 not defined!"
+}
+
 make_dir() {
-	state "$1" \
+	stat "$1" \
 	> /dev/null \
 	2> /dev/null && return
 
 	mkdir -p "$1"
 }
 
+# fetch file, checks the md5sum and only curls if needed
+fetch_file() {
+	F_NAME=$1
+	MD5_SUM=$2
+	URL=$3
+
+	stat "$F_NAME" \
+	> /dev/null \
+	2> /dev/null \
+	|| curl -L "$URL" -o "$F_NAME"
+
+	echo "$MD5_SUM  $F_NAME" | md5sum -c || (
+		rm "$F_NAME"
+		fetch_file $1 $2 $3
+	)
+}
+
+fetch_tar() {
+	F_NAME=$1
+	MD5_SUM=$2
+	URL=$3
+
+	stat "$F_NAME" \
+	> /dev/null \
+	2> /dev/null \
+	|| (
+		curl -L "$URL" -o "$F_NAME"
+		tar -xf "$F_NAME"
+	)
+
+	echo "$MD5_SUM  $F_NAME" | md5sum -c || (
+		rm "$F_NAME"
+		fetch_file $1 $2 $3
+	)
+}
+
 assert_file build.sh
 
 . ./build.sh
 
+assert_func fetch
+assert_func build
+assert_func package
+assert_func backup
+assert_func license
+
 srcdir="$CWD/src"
 outdir="$CWD/out"
-pkgdir="$outdir/$pkgname-$pkgver"
+pkgdir="$outdir/$pkgname.$pkgver"
 pkgfile="$outdir/$pkgname.$pkgver.tar.zst"
 
 genmeta() {
@@ -59,7 +113,7 @@ if [ ! -n "$FAKEROOTKEY" ]; then
 	stat $pkgfile \
 	> /dev/null \
 	2> /dev/null \
-	&& fatal 'Package already built'
+	&& warn 'Package already built'
 
 	stat $srcdir \
 	> /dev/null \
@@ -92,8 +146,12 @@ else
 	echo " Bundling "
 	echo "=========="
 
-	make_dir "$pkgdir"
+	stat "$outdir" \
+	> /dev/null \
+	2> /dev/null && rm -rf "$outdir"
+
 	make_dir "$outdir"
+	make_dir "$pkgdir"
 
 	cd "$srcdir"
 
