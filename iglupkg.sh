@@ -19,24 +19,22 @@ warn() {
 assert_file() {
 	stat "$1" \
 	> /dev/null \
-	2> /dev/null && return
-
-	fatal "$1 does not exist!"
+	2> /dev/null \
+	|| fatal "$1 does not exist!"
 }
 
 assert_func() {
 	command -V "$1" \
 	> /dev/null \
-	2> /dev/null && return
-	fatal "build.sh not sane: $1 not defined!"
+	2> /dev/null \
+	|| fatal "build.sh not sane: $1 not defined!"
 }
 
 make_dir() {
 	stat "$1" \
 	> /dev/null \
-	2> /dev/null && return
-
-	mkdir -p "$1"
+	2> /dev/null \
+	|| mkdir -p "$1"
 }
 
 # fetch file, checks the md5sum and only curls if needed
