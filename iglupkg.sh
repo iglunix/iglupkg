@@ -69,7 +69,7 @@ fetch_tar() {
 
 	echo "$MD5_SUM  $F_NAME" | md5sum -c || (
 		rm "$F_NAME"
-		fetch_file $1 $2 $3
+		fetch_tar $1 $2 $3
 	)
 }
 
