@@ -110,15 +110,15 @@ genmeta() {
 }
 
 if [ ! -n "$FAKEROOTKEY" ]; then
-	stat $pkgfile \
+	if stat $pkgfile \
 	> /dev/null \
-	2> /dev/null \
-	&& warn 'Package already built'
-
-	stat $srcdir \
+	2> /dev/null; then
+		warn 'Package already built'
+	elif stat $srcdir \
 	> /dev/null \
-	2> /dev/null \
-	&& warn 'Package partially built'
+	2> /dev/null; then
+		warn 'Package partially built'
+	fi
 
 	make_dir "$srcdir"
 
