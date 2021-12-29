@@ -1,4 +1,17 @@
 #!/bin/sh
+#
+# TODO:
+#
+#  - `iglupkg p` just packages
+#  - `iglupkg b` just builds
+#  - `iglupkg f` just fetches
+#  - `iglupkg bp` clean builds then packages
+#  - `iglupkg bp --dirty` builds then packages
+# Each will always clean
+# except build will allow dirty build steps
+
+
+
 
 CWD="$(pwd)"
 
@@ -6,6 +19,7 @@ export CC=cc
 export CXX=c++
 export ARCH="$(uname -m)"
 export TRIPLE="$ARCH-unknown-linux-musl"
+export JOBS=$(nproc)
 
 fatal() {
 	echo "ERROR: $@"
@@ -136,7 +150,7 @@ if [ ! -n "$FAKEROOTKEY" ]; then
 	echo " Building "
 	echo "=========="
 
-	build
+	MAKEFLAGS="-j$JOBS" build
 
 	cd "$CWD"
 
