@@ -1,25 +1,28 @@
 #!/bin/sh
-#
-# TODO:
-#
-#  - `iglupkg p` just packages
-#  - `iglupkg b` just builds
-#  - `iglupkg f` just fetches
-#  - `iglupkg bp` clean builds then packages
-#  - `iglupkg bp --dirty` builds then packages
-# Each will always clean
-# except build will allow dirty build steps
+set -e
 
-
-
-
-CWD="$(pwd)"
-
+export HOST_ARCH=$(uname -m)
+export HOST_TRIPLE="$HOST_ARCH-unknown-linux-musl"
+cross=
+if [ -z "$ARCH" ]; then
+	export ARCH=$HOST_ARCH
+else
+	cross=-$ARCH
+fi
+export TRIPLE="$ARCH-unknown-linux-musl"
 export CC=cc
 export CXX=c++
-export ARCH="$(uname -m)"
-export TRIPLE="$ARCH-unknown-linux-musl"
+export AR=ar
+export RANLIB=ranlib
+export CFLAGS="-flto -O3"
+export CXXFLAGS=$CFLAGS
+
 export JOBS=$(nproc)
+
+usage() {
+	echo "usage: $(basename $0) [fbp]"
+	exit 1
+}
 
 fatal() {
 	echo "ERROR: $@"
@@ -30,81 +33,17 @@ warn() {
 	echo "WARNING: $@"
 }
 
-assert_file() {
-	stat "$1" \
-	> /dev/null \
-	2> /dev/null \
-	|| fatal "$1 does not exist!"
-}
-
-assert_func() {
-	command -V "$1" \
-	> /dev/null \
-	2> /dev/null \
-	|| fatal "build.sh not sane: $1 not defined!"
-}
-
-make_dir() {
-	stat "$1" \
-	> /dev/null \
-	2> /dev/null \
-	|| mkdir -p "$1"
-}
-
-# fetch file, checks the md5sum and only curls if needed
-fetch_file() {
-	F_NAME=$1
-	MD5_SUM=$2
-	URL=$3
-
-	stat "$F_NAME" \
-	> /dev/null \
-	2> /dev/null \
-	|| curl -L "$URL" -o "$F_NAME"
-
-	echo "$MD5_SUM  $F_NAME" | md5sum -c || (
-		rm "$F_NAME"
-		fetch_file $1 $2 $3
-	)
-}
-
-fetch_tar() {
-	F_NAME=$1
-	MD5_SUM=$2
-	URL=$3
-
-	stat "$F_NAME" \
-	> /dev/null \
-	2> /dev/null \
-	|| (
-		curl -L "$URL" -o "$F_NAME"
-		tar -xf "$F_NAME"
-	)
-
-	echo "$MD5_SUM  $F_NAME" | md5sum -c || (
-		rm "$F_NAME"
-		fetch_tar $1 $2 $3
-	)
-}
-
-assert_file build.sh
+[ -f build.sh ] || fatal 'build.sh not found'
 
 . ./build.sh
 
-[ -n "$pkgname" ] || fatal "build.sh not sane: pkgname not defined"
-[ -n "$pkgver" ] || fatal "build.sh not sane: pkgver not defined"
-assert_func fetch
-assert_func build
-assert_func package
-assert_func backup
-assert_func license
+srcdir="$(pwd)/src"
+outdir="$(pwd)/out"
+pkgdir="$(pwd)/out/$pkgname.$pkgver"
 
-srcdir="$CWD/src"
-outdir="$CWD/out"
-pkgdir="$outdir/$pkgname.$pkgver"
-pkgfile="$outdir/$pkgname.$pkgver.tar.zst"
+rm -rf "$outdir"
 
-genmeta() {
+_genmeta() {
 	echo "[pkg]"
 	echo "pkgname=$pkgname"
 	echo "pkgver=$pkgver"
@@ -123,63 +62,42 @@ genmeta() {
 	cd "$srcdir"
 }
 
-if [ ! -n "$FAKEROOTKEY" ]; then
-	if stat $pkgfile \
-	> /dev/null \
-	2> /dev/null; then
-		warn 'Package already built'
-	elif stat $srcdir \
-	> /dev/null \
-	2> /dev/null; then
-		warn 'Package partially built'
-	fi
-
-	make_dir "$srcdir"
-
+_f() {
+	rm -rf "$srcdir"
+	mkdir -p "$srcdir"
 	cd "$srcdir"
-
-	echo "=========="
-	echo " Fetching "
-	echo "=========="
-
 	fetch
-
 	cd "$srcdir"
+	:> .fetched
+}
 
-	echo "=========="
-	echo " Building "
-	echo "=========="
-
-	MAKEFLAGS="-j$JOBS" build
-
-	cd "$CWD"
-
-	fakeroot "$0"
-else
-	echo "=========="
-	echo " Bundling "
-	echo "=========="
-
-	stat "$outdir" \
-	> /dev/null \
-	2> /dev/null && rm -rf "$outdir"
-
-	make_dir "$outdir"
-	make_dir "$pkgdir"
-
+_b() {
 	cd "$srcdir"
-
-	pkgdir="$pkgdir" package
-
+	[ -f .fetched ] || fatal 'must fetch before building'
+	build
 	cd "$srcdir"
+	:> .built
+}
 
-	install -d "$pkgdir/usr/share/iglupkg"
-
-	pkgmetafile="$pkgdir/usr/share/iglupkg/$pkgname"
-
-	genmeta > "$pkgmetafile"
-
+_p() {
+	cd "$srcdir"
+	[ -f .built ] || fatal 'must build before packaging'
+	mkdir -p "$pkgdir"
+	package
+	install -d "$pkgdir/usr/share/iglupkg/"
+	cd "$srcdir"
+	_genmeta > "$pkgdir/usr/share/iglupkg/$pkgname$cross"
 	cd "$pkgdir"
+	tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar.zstd * -I zstd
+}
 
-	tar -I zstd -cf "$pkgfile" *
+if [ -z "$@" ]; then
+	[ -f "$srcdir/.fetched" ] || _f
+	[ -f "$srcdir/.built" ] || _b
+	_p
+else
+	while [ ! -z "$1" ]; do
+		_"$1"
+		shift
+	done
 fi
