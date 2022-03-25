@@ -3,10 +3,54 @@ set -e
 
 export HOST_ARCH=$(uname -m)
 export HOST_TRIPLE="$HOST_ARCH-unknown-linux-musl"
-cross=
+
+to_run=
+
+while [ ! -z "$1" ]; do
+	case "$1" in
+		--with-cross=*)
+			ARCH=$(echo "$1" | cut -d'=' -f2)
+			[ -z "$ARCH" ] && fatal '--with-cross=<arch> requires an argument'
+			echo "INFO: cross compiling for $ARCH"
+			WITH_CROSS="$ARCH"
+			;;
+		--with-cross)
+			fatal '--with-cross=<arch> requires an argument'
+			;;
+		--for-cross)
+			echo 'INFO: for cross'
+			FOR_CROSS=1
+			;;
+		fbp)
+			to_run="f b p"
+			;;
+		fb)
+			to_run="f b"
+			;;
+		f)
+			to_run="f"
+			;;
+		bp)
+			to_run="b p"
+			;;
+		b)
+			to_run="b"
+			;;
+		p)
+			to_run="p"
+			;;
+		*)
+			fatal "invalid argument $1"
+			;;
+	esac
+	shift
+done
+
 if [ -z "$ARCH" ]; then
 	export ARCH=$HOST_ARCH
-else
+fi
+
+if [ ! -z "$FOR_CROSS" ]; then
 	cross=-$ARCH
 fi
 export TRIPLE="$ARCH-unknown-linux-musl"
@@ -14,7 +58,7 @@ export CC=cc
 export CXX=c++
 export AR=ar
 export RANLIB=ranlib
-export CFLAGS="-flto -O3"
+export CFLAGS="-O3"
 export CXXFLAGS=$CFLAGS
 
 export JOBS=$(nproc)
@@ -74,7 +118,7 @@ _f() {
 _b() {
 	cd "$srcdir"
 	[ -f .fetched ] || fatal 'must fetch before building'
-	build
+	MAKEFLAGS=-j"$JOBS" build
 	cd "$srcdir"
 	:> .built
 }
@@ -88,14 +132,16 @@ _p() {
 	cd "$srcdir"
 	_genmeta > "$pkgdir/usr/share/iglupkg/$pkgname$cross"
 	cd "$pkgdir"
-	tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar.zstd * -I zstd
+	tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar.zst * -I zstd
 }
 
-if [ -z "$@" ]; then
+if [ -z "$to_run" ]; then
 	[ -f "$srcdir/.fetched" ] || _f
 	[ -f "$srcdir/.built" ] || _b
 	_p
 else
+	set -- $to_run
+
 	while [ ! -z "$1" ]; do
 		_"$1"
 		shift

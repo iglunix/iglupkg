@@ -36,14 +36,14 @@ continue_interactive() {
 }
 
 remove() {
+	set +e
 	rm -f "$@" 2> /dev/null
 	while shift 2> /dev/null; do
 		if [ -d "/$1" ]; then
-			set +e
 			rmdir "/$1" 2> /dev/null
-			set -e
 		fi
 	done
+	set -e
 }
 
 assert_deps() {
