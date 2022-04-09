@@ -34,6 +34,7 @@ while [ ! -z "$1" ]; do
 			WITH_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
 			[ -z "$WITH_CROSS_DIR" ] && fatal '--with-cross-dir=<sysroot> requires an argument'
 			[ -d "$WITH_CROSS_DIR" ] 2>/dev/null || warn "$WITH_CROSS_DIR does not exist"
+			echo "INFO: using toolchain libraries from $WITH_CROSS_DIR"
 			;;
 		--with-cross-dir)
 			fatal '--with-cross-dir=<sysroot> requires an argument'
@@ -45,6 +46,7 @@ while [ ! -z "$1" ]; do
 		--for-cross-dir=*)
 			FOR_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
 			[ -z "$FOR_CROSS_DIR" ] && fatal '--for-cross-dir=<sysroot> requires an argument'
+			echo "INFO: packaging for prefix $FOR_CROSS_DIR"
 			;;
 		--for-cross-dir)
 			fatal '--for-cross-dir=<sysroot> requires an argument'
