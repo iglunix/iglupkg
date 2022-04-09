@@ -4,8 +4,21 @@ set -e
 export HOST_ARCH=$(uname -m)
 export HOST_TRIPLE="$HOST_ARCH-unknown-linux-musl"
 
-to_run=
+usage() {
+	echo "usage: $(basename $0) [fbp]"
+	exit 1
+}
 
+fatal() {
+	echo "ERROR: $@"
+	exit 1
+}
+
+warn() {
+	echo "WARNING: $@"
+}
+
+to_run=
 while [ ! -z "$1" ]; do
 	case "$1" in
 		--with-cross=*)
@@ -17,9 +30,24 @@ while [ ! -z "$1" ]; do
 		--with-cross)
 			fatal '--with-cross=<arch> requires an argument'
 			;;
+		--with-cross-dir=*)
+			WITH_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
+			[ -z "$WITH_CROSS_DIR" ] && fatal '--with-cross-dir=<sysroot> requires an argument'
+			[ -d "$WITH_CROSS_DIR" ] 2>/dev/null || warn "$WITH_CROSS_DIR does not exist"
+			;;
+		--with-cross-dir)
+			fatal '--with-cross-dir=<sysroot> requires an argument'
+			;;
 		--for-cross)
 			echo 'INFO: for cross'
 			FOR_CROSS=1
+			;;
+		--for-cross-dir=*)
+			FOR_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
+			[ -z "$FOR_CROSS_DIR" ] && fatal '--for-cross-dir=<sysroot> requires an argument'
+			;;
+		--for-cross-dir)
+			fatal '--for-cross-dir=<sysroot> requires an argument'
 			;;
 		fbp)
 			to_run="f b p"
@@ -46,6 +74,9 @@ while [ ! -z "$1" ]; do
 	shift
 done
 
+[ -z "$WITH_CROSS_DIR" ] && WITH_CROSS_DIR=/usr/$ARCH-linux-musl
+[ -z "$FOR_CROSS_DIR" ] && FOR_CROSS_DIR=/usr/$ARCH-linux-musl
+
 if [ -z "$ARCH" ]; then
 	export ARCH=$HOST_ARCH
 fi
@@ -62,20 +93,6 @@ export CFLAGS="-O3"
 export CXXFLAGS=$CFLAGS
 
 export JOBS=$(nproc)
-
-usage() {
-	echo "usage: $(basename $0) [fbp]"
-	exit 1
-}
-
-fatal() {
-	echo "ERROR: $@"
-	exit 1
-}
-
-warn() {
-	echo "WARNING: $@"
-}
 
 [ -f build.sh ] || fatal 'build.sh not found'
 

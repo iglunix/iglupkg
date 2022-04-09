@@ -41,6 +41,8 @@ remove() {
 	while shift 2> /dev/null; do
 		if [ -d "/$1" ]; then
 			rmdir "/$1" 2> /dev/null
+		elif [ -f "/$1" ]; then
+			rm -f "/$1" 2> /dev/null
 		fi
 	done
 	set -e
