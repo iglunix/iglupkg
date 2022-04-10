@@ -102,9 +102,9 @@ export JOBS=$(nproc)
 
 srcdir="$(pwd)/src"
 outdir="$(pwd)/out"
-pkgdir="$(pwd)/out/$pkgname.$pkgver"
+pkgdir="$(pwd)/out/$pkgname$cross.$pkgver"
 
-rm -rf "$outdir"
+[ -d "$pkgdir" ] || warn "package already built. Pass f b or p."
 
 _genmeta() {
 	echo "[pkg]"
@@ -126,6 +126,7 @@ _genmeta() {
 }
 
 _f() {
+	rm -rf "$pkgdir"
 	rm -rf "$srcdir"
 	mkdir -p "$srcdir"
 	cd "$srcdir"
@@ -135,6 +136,7 @@ _f() {
 }
 
 _b() {
+	rm -rf "$pkgdir"
 	cd "$srcdir"
 	[ -f .fetched ] || fatal 'must fetch before building'
 	MAKEFLAGS=-j"$JOBS" build
@@ -143,6 +145,7 @@ _b() {
 }
 
 _p() {
+	rm -rf "$pkgdir"
 	cd "$srcdir"
 	[ -f .built ] || fatal 'must build before packaging'
 	mkdir -p "$pkgdir"
@@ -157,7 +160,7 @@ _p() {
 if [ -z "$to_run" ]; then
 	[ -f "$srcdir/.fetched" ] || _f
 	[ -f "$srcdir/.built" ] || _b
-	_p
+	[ -d "$pkgdir" ] || _p
 else
 	set -- $to_run
 
