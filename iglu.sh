@@ -1,5 +1,5 @@
 #!/bin/sh
-# usage: iglu [ add | del ] <pkg>
+# usage: iglu [ add | del | has ] <pkg>
 #
 # WONTFIX:
 #  - circular deps shall not be handled
@@ -7,7 +7,7 @@
 set -e
 
 usage() {
-	echo "usage: $(basename $0) [add | del] <pkg>"
+	echo "usage: $(basename $0) [add | del | has] <pkg>"
 	exit 1
 }
 
@@ -59,9 +59,19 @@ PKG=$2
 
 [ -z "$1" ] && usage
 
-[ $(id -u) -eq 0 ] || fatal "root permissions needed"
+root_req() {
+	[ $(id -u) -eq 0 ] || fatal "root permissions needed"
+}
+
+has() {
+	while [ ! -z "$1" ]; do
+		[ -f "/usr/share/iglupkg/$1" ]
+		shift
+	done
+}
 
 if [ "$CMD" = "add" ]; then
+	root_req
 	META_PATH=$(tar -I zstd -tf "$PKG" | grep 'usr/share/iglupkg/' | tail -n1)
 	PKGNAME=$(basename "$META_PATH")
 
@@ -77,12 +87,12 @@ if [ "$CMD" = "add" ]; then
 
 
 		warn "removing duplicate files ..."
-		TO_REMOVE=$(diff -u "$TMP_DIR/old" "$TMP_DIR/new" | grep -v '^---' | grep -E '^\-' | cut -d'-' -f 2 | awk '{ print "/"$1 }')
+		TO_REMOVE=$(diff -u "$TMP_DIR/old" "$TMP_DIR/new" | grep -v '^---' | grep -E '^\-' | cut -d'-' -f2- | awk '{ print "/"$1 }')
 
 		[ -z "$TO_REMOVE" ] || warn "will remove $TO_REMOVE"
 		continue_interactive
 
-		remove "$TO_REMOVE"
+		remove $TO_REMOVE
 	else
 		warn "installing $PKGNAME ..."
 		continue_interactive
@@ -90,6 +100,7 @@ if [ "$CMD" = "add" ]; then
 	tar -I zstd -C / -xf "$PKG"
 	rm -rf "$TMP_DIR"
 elif [ "$CMD" = "del" ]; then
+	root_req
 	META_PATH="/usr/share/iglupkg/$PKG"
 	[ -f "$META_PATH" ] || fatal "package $PKG not installed"
 	TO_REMOVE=$(chop_fs $META_PATH | awk '{ print "/"$1 }')
@@ -97,6 +108,9 @@ elif [ "$CMD" = "del" ]; then
 	continue_interactive
 
 	remove $TO_REMOVE
+elif [ "$CMD" =  "has" ]; then
+	shift
+	has $@
 else
 	fatal "unknown command $CMD"
 fi
