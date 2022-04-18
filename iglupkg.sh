@@ -91,8 +91,18 @@ export CC=cc
 export CXX=c++
 export AR=ar
 export RANLIB=ranlib
+export CROSS_EXTRA_LDFLAGS="--target=$TRIPLE --sysroot=$WITH_CROSS_DIR"
 export CFLAGS="-O3"
+export CROSS_EXTRA_CFLAGS="--target=$TRIPLE --sysroot=$WITH_CROSS_DIR"
 export CXXFLAGS=$CFLAGS
+export CROSS_EXTRA_CXXFLAGS="$CROSS_EXTRA_CFLAGS -nostdinc++ -isystem $WITH_CROSS_DIR/include/c++/v1/"
+
+auto_cross() {
+	[ -z "$WITH_CROSS" ] && return
+	export CFLAGS="$CFLAGS $CROSS_EXTRA_CFLAGS"
+	export CXXFLAGS="$CFLAGS $CROSS_EXTRA_CXXFLAGS"
+	export LDFLAGS="$CROSS_EXTRA_LDFLAGS"
+}
 
 export JOBS=$(nproc)
 
