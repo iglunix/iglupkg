@@ -96,8 +96,8 @@ if [ ! -z "$FOR_CROSS" ]; then
 	cross=-$ARCH
 fi
 export TRIPLE="$ARCH-unknown-linux-musl"
-export CC=cc
-export CXX=c++
+[ -z "$CC" ] && export CC=cc
+[ -z "$CXX" ] && export CXX=c++
 export AR=ar
 export RANLIB=ranlib
 export CROSS_EXTRA_LDFLAGS="--target=$TRIPLE --sysroot=$WITH_CROSS_DIR"
