@@ -4,6 +4,8 @@ set -e
 export HOST_ARCH=$(uname -m)
 export HOST_TRIPLE="$HOST_ARCH-unknown-linux-musl"
 
+command -V bad 2>/dev/null || bad() { "$@" }
+
 usage() {
 	echo "usage: $(basename $0) [fbp]"
 	exit 1
