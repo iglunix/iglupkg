@@ -110,9 +110,9 @@ export JOBS=$(nproc)
 
 . ./build.sh
 
-[ -z "$mkdeps" ] || iglu has $(echo $mkdeps | sed -e "s|:| |g") \
+[ -z "$mkdeps" ] || command -V iglu && iglu has $(echo $mkdeps | sed -e "s|:| |g") \
 	|| fatal 'missing make dependancies'
-[ -z "$deps" ] || iglu has $(echo $deps | sed -e "s|$|$cross|" -e "s|:|$cross |g") \
+[ -z "$deps" ] || command -V iglu && iglu has $(echo $deps | sed -e "s|$|$cross|" -e "s|:|$cross |g") \
 	|| fatal 'missing runtime dependancies'
 
 srcdir="$(pwd)/src"
