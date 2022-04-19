@@ -9,6 +9,10 @@ command -V bad 2>/dev/null || bad() {
 	"$@"
 }
 
+bad --gmake command -V gmake 2> /dev/null || gmake() {
+	make "$@"
+}
+
 usage() {
 	echo "usage: $(basename $0) [fbp]"
 	exit 1
