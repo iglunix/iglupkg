@@ -2,7 +2,12 @@
 set -e
 
 export HOST_ARCH=$(uname -m)
-export HOST_TRIPLE="$HOST_ARCH-unknown-linux-musl"
+
+if uname -o | grep GNU >/dev/null; then
+	export HOST_TRIPLE="$HOST_ARCH-unknown-linux-gnu"
+else
+	export HOST_TRIPLE="$HOST_ARCH-unknown-linux-musl"
+fi
 
 command -V bad 2>/dev/null || bad() {
 	shift
