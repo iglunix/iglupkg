@@ -59,7 +59,7 @@ while [ ! -z "$1" ]; do
 			;;
 		--for-cross-dir=*)
 			FOR_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
-			[ -z "$FOR_CROSS_DIR" ] && fatal '--for-cross-dir=<sysroot> requires an argument'
+			#[ -z "$FOR_CROSS_DIR" ] && fatal '--for-cross-dir=<sysroot> requires an argument'
 			echo "INFO: packaging for prefix $FOR_CROSS_DIR"
 			;;
 		--for-cross-dir)
