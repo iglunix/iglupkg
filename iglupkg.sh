@@ -58,6 +58,7 @@ while [ ! -z "$1" ]; do
 			FOR_CROSS=1
 			;;
 		--for-cross-dir=*)
+			FOR_CROSS_DIR_SET=1
 			FOR_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
 			#[ -z "$FOR_CROSS_DIR" ] && fatal '--for-cross-dir=<sysroot> requires an argument'
 			echo "INFO: packaging for prefix $FOR_CROSS_DIR"
@@ -91,7 +92,7 @@ while [ ! -z "$1" ]; do
 done
 
 [ -z "$WITH_CROSS_DIR" ] && WITH_CROSS_DIR=/usr/$ARCH-linux-musl
-[ -z "$FOR_CROSS_DIR" ] && FOR_CROSS_DIR=/usr/$ARCH-linux-musl
+[ -z "$FOR_CROSS_DIR_SET" ] && FOR_CROSS_DIR=/usr/$ARCH-linux-musl
 
 if [ -z "$ARCH" ]; then
 	export ARCH=$HOST_ARCH
