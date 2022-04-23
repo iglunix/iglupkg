@@ -113,6 +113,11 @@ export CXXFLAGS=$CFLAGS
 export CROSS_EXTRA_CXXFLAGS="$CROSS_EXTRA_CFLAGS -nostdinc++ -isystem $WITH_CROSS_DIR/include/c++/v1/"
 
 auto_cross() {
+	if [ -z "$FOR_CROSS" ]; then
+		PREFIX=/usr
+	else
+		PREFIX=$FOR_CROSS_DIR
+	fi
 	[ -z "$WITH_CROSS" ] && return
 	export CFLAGS="$CFLAGS $CROSS_EXTRA_CFLAGS"
 	export CXXFLAGS="$CFLAGS $CROSS_EXTRA_CXXFLAGS"
