@@ -191,7 +191,11 @@ _p() {
 	cd "$srcdir"
 	_genmeta > "$pkgdir/usr/share/iglupkg/$pkgname$cross"
 	cd "$pkgdir"
-	tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar.zst * -I zstd
+	if command -V zstd; then
+		tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar.zst * -I zstd
+	else
+		tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar *
+	fi
 }
 
 if [ -z "$to_run" ]; then
