@@ -132,7 +132,7 @@ elif [ "$CMD" =  "ba" ]; then
 	iglupkg_check
 	iglupkg || exit 1
 	cd out/
-	for pkg in *.tar.xz; do
+	for pkg in *.tar.*; do
 		iglu add "$pkg"
 	done
 else
