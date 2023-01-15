@@ -120,7 +120,7 @@ elif [ "$CMD" = "del" ]; then
 elif [ "$CMD" =  "has" ]; then
 	shift
 	has $@
-elif [  "$CMD" = "b"]; then
+elif [  "$CMD" = "b" ]; then
     #BUILD
 	iglupkg_check
 	iglupkg || exit 1
