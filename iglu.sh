@@ -130,7 +130,7 @@ elif [ "$CMD" =  "ba" ]; then
 	iglupkg || exit 1
 	cd out/
 	for pkg in *.tar.xz; do
-		iglu -add "$pkg"
+		iglu add "$pkg"
 	done
 else
 	fatal "unknown command $CMD"
