@@ -71,6 +71,14 @@ has() {
 	done
 }
 
+iglupkg_check() {
+	if ! command -v iglupkg > /dev/null 2>&1; then
+		echo "iglupkg is missing??!!"
+		exit 1
+	fi
+}
+
+
 if [ "$CMD" = "add" ]; then
 	root_req
 	META_PATH=$(tar -I zstd -tf "$PKG" | grep 'usr/share/iglupkg/' | tail -n1)
