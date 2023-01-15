@@ -20,6 +20,7 @@ bad --gmake command -V gmake 2> /dev/null || gmake() {
 
 usage() {
 	echo "usage: $(basename $0) [fbp]"
+	echo "version: 0.1.0"
 	exit 1
 }
 
