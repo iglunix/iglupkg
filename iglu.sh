@@ -7,6 +7,9 @@
 set -e
 
 usage() {
+	if [ ! -z "$1" ]; then
+		echo "FATAL: $@"
+	fi
 	echo "usage: $(basename $0) [add | del | has | b | ba] <pkg>"
 	echo "version: 0.2.0"
 	exit 1
@@ -133,5 +136,5 @@ elif [ "$CMD" =  "ba" ]; then
 		iglu add "$pkg"
 	done
 else
-	fatal "unknown command $CMD"
+	usage "unknown command $CMD"
 fi
