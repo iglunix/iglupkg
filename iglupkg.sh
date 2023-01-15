@@ -20,12 +20,16 @@ bad --gmake command -V gmake 2> /dev/null || gmake() {
 
 usage() {
 	echo "usage: $(basename $0) [fbp]"
-	echo "version: 0.1.0"
+	echo "usage: f: fetch"
+	echo "usage: b: build"
+	echo "usage: p: package"
+	echo "version: 0.1.1"
 	exit 1
 }
 
 fatal() {
 	echo "ERROR: $@"
+	usage
 	exit 1
 }
 
