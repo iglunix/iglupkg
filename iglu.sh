@@ -7,7 +7,7 @@
 set -e
 
 usage() {
-	echo "usage: $(basename $0) [add | del | has] <pkg>"
+	echo "usage: $(basename $0) [add | del | has | b | bi| biu] <pkg>"
 	echo "version: 0.1.0"
 	exit 1
 }
@@ -112,6 +112,27 @@ elif [ "$CMD" = "del" ]; then
 elif [ "$CMD" =  "has" ]; then
 	shift
 	has $@
+elif [  "$CMD" = "$b"]; then
+    #BUILD
+	iglupkg_check
+	iglupkg || exit 1
+elif [ "$CMD" =  "$bi" ]; then
+    #BUILD INSTALL
+	iglupkg_check
+	iglupkg || exit 1
+	cd out/
+	for pkg in *.tar.xz; do
+		iglu -i "$pkg"
+	done
+elif [ "$CMD" = "$biu"]; then
+    #BUILD INSTALL UPDATE
+	iglupkg_check
+	iglupkg || exit 1
+	cd out/
+	for pkg in *.tar.xz; do
+		iglu -iu "$pkg"
+	done
+    fielif [ "$b" = "1" ]; then
 else
 	fatal "unknown command $CMD"
 fi
