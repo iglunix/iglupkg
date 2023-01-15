@@ -69,6 +69,7 @@ root_req() {
 
 has() {
 	while [ ! -z "$1" ]; do
+		>&2 echo "checking dep $1"
 		[ -f "/usr/share/iglupkg/$1" ]
 		shift
 	done
