@@ -8,6 +8,7 @@ set -e
 
 usage() {
 	echo "usage: $(basename $0) [add | del | has] <pkg>"
+	echo "version: 0.1.0"
 	exit 1
 }
 
