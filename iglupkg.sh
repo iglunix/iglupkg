@@ -1,4 +1,9 @@
 #!/bin/sh
+muon_base_args="-Dbuildtype=release \
+-Dprefix=/usr \
+-Dlibexecdir=lib \
+-Ddefault_library=shared"
+
 set -e
 
 export HOST_ARCH=$(uname -m)
