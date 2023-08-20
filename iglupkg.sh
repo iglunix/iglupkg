@@ -2,7 +2,9 @@
 muon_base_args="-Dbuildtype=release \
 -Dprefix=/usr \
 -Dlibexecdir=lib \
--Ddefault_library=shared"
+-Ddefault_library=shared \
+-Dwarning_level=0 \
+-Dwerror=false"
 
 set -e
 
