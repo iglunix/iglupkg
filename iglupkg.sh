@@ -208,8 +208,9 @@ _x() {
 	then
 		desc="TODO"
 	fi
-
+	set -x
 	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel -s "$desc" -D "$n_deps $y_deps" "$pkgdir"
+	set +x
 }
 
 _p() {
