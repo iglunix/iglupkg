@@ -1,4 +1,5 @@
 #!/bin/sh
+pkgrel=0
 muon_base_args="-Dbuildtype=release \
 -Dprefix=/usr \
 -Dlibexecdir=lib \
@@ -143,9 +144,9 @@ export JOBS=$(nproc)
 . ./build.sh
 
 if command -V iglu 2>/dev/null; then
-	[ -z "$mkdeps" ] || iglu has $(echo $mkdeps | sed -e "s|:| |g") \
+	[ -z "$mkdeps" ] || iglu has $mkdeps \
 		|| fatal 'missing make dependancies'
-	[ -z "$deps" ] || iglu has $(echo $deps | sed -e "s|$|$cross|" -e "s|:|$cross |g") \
+	[ -z "$deps" ] || iglu has $deps \
 		|| fatal 'missing runtime dependancies'
 fi
 
@@ -202,12 +203,12 @@ _p() {
 	install -d "$pkgdir/usr/share/iglupkg/"
 	cd "$srcdir"
 	_genmeta > "$pkgdir/usr/share/iglupkg/$pkgname$cross"
-	cd "$pkgdir"
-	if command -V zstd; then
-		tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar.zst * -I zstd
-	else
-		tar --owner=0 --group=0 -cf ../$pkgname$cross.$pkgver.tar *
-	fi
+	all_deps="$deps:$rdeps"
+	IFS=: set -- $all_deps
+	n_deps=$(printf '%s\n' $@ | grep -v '>=' | awk '{printf $0">=0"}')
+	y_deps=$(printf '%s\n' $@ | grep '>=' || : )
+	cd "$outdir"
+	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel -s "$desc" -D "$n_deps $y_deps" "$pkgdir"
 }
 
 if [ -z "$to_run" ]; then
