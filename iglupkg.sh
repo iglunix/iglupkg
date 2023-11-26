@@ -145,9 +145,9 @@ export JOBS=$(nproc)
 
 if command -V iglu 2>/dev/null; then
 	[ -z "$mkdeps" ] || iglu has $mkdeps \
-		|| fatal 'missing make dependancies'
+		|| warn 'missing make dependancies'
 	[ -z "$deps" ] || iglu has $deps \
-		|| fatal 'missing runtime dependancies'
+		|| warn 'missing runtime dependancies'
 fi
 
 srcdir="$(pwd)/src"
