@@ -97,6 +97,9 @@ while [ ! -z "$1" ]; do
 		p)
 			to_run="p"
 			;;
+		x)
+			to_run="x"
+			;;
 		*)
 			fatal "invalid argument $1"
 			;;
@@ -194,6 +197,16 @@ _b() {
 	:> .built
 }
 
+_x() {
+	cd "$srcdir"
+	all_deps="$deps:$rdeps"
+	IFS=: set -- $all_deps
+	n_deps=$(printf '%s\n' $@ | grep -v '>=' | awk '{printf $0">=0"}')
+	y_deps=$(printf '%s\n' $@ | grep '>=' || : )
+	cd "$outdir"
+	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel -s "$desc" -D "$n_deps $y_deps" "$pkgdir"
+}
+
 _p() {
 	rm -rf "$pkgdir"
 	cd "$srcdir"
@@ -203,12 +216,10 @@ _p() {
 	install -d "$pkgdir/usr/share/iglupkg/"
 	cd "$srcdir"
 	_genmeta > "$pkgdir/usr/share/iglupkg/$pkgname$cross"
-	all_deps="$deps:$rdeps"
-	IFS=: set -- $all_deps
-	n_deps=$(printf '%s\n' $@ | grep -v '>=' | awk '{printf $0">=0"}')
-	y_deps=$(printf '%s\n' $@ | grep '>=' || : )
-	cd "$outdir"
-	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel -s "$desc" -D "$n_deps $y_deps" "$pkgdir"
+	if command -V xbps-create
+	then
+		_x
+	fi
 }
 
 if [ -z "$to_run" ]; then
