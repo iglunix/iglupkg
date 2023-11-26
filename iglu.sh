@@ -1,5 +1,8 @@
 #!/bin/sh -e
 # usage: iglu [ add | del | has ] <pkg>
+#
+# options:
+#  -r <dir> root dir
 
 fatal() {
 	printf "ERROR: %s\n" "$@"
@@ -26,19 +29,51 @@ fi
 
 case "$1" in
 	add)
-		case "$2" in
+		shift
+		root_dir=
+		name=
+		while :
+		do
+			case "$1" in
+				-r)
+					shift
+					if [ ! -z "$1" ]
+					then
+						root_dir="$1"
+					else
+						fatal '-r requires argument'
+					fi
+					shift
+					;;
+				*)
+					if [ ! -z "$1" ]
+					then
+						name="$1"
+						shift
+					else
+						break
+					fi
+			esac
+		done
+		xbps_extra_args=
+		if [ ! -z "$root_dir" ]
+		then
+			xbps_extra_args="-r $root_dir $xbps_extra_args"
+		fi
+
+		case "$name" in
 			*.xbps)
 				REPO=/var/lib/iglu
-				cp "$2" "$REPO"
+				cp "$name" "$REPO"
 				cd "$REPO"
 				rm -f *-repodata
 				xbps-rindex -a *.xbps
 				cd -
-				b_name=$(basename "$2" | cut -d'.' -f1 | rev | cut -d'-' -f2- | rev)
-				xbps-install --repository="$REPO" "$b_name" -f
+				b_name=$(basename "$name" | cut -d'.' -f1 | rev | cut -d'-' -f2- | rev)
+				xbps-install $xbps_extra_args --repository="$REPO" "$b_name" -f
 				;;
 			*)
-				xbps-install "$2"
+				xbps-install "$name"
 				;;
 		esac
 		;;
