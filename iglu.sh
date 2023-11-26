@@ -31,6 +31,7 @@ case "$1" in
 	add)
 		shift
 		root_dir=
+		yes=
 		name=
 		while :
 		do
@@ -43,6 +44,10 @@ case "$1" in
 					else
 						fatal '-r requires argument'
 					fi
+					shift
+					;;
+				-y)
+					yes=1
 					shift
 					;;
 				*)
@@ -59,6 +64,11 @@ case "$1" in
 		if [ ! -z "$root_dir" ]
 		then
 			xbps_extra_args="-r $root_dir $xbps_extra_args"
+		fi
+
+		if [ ! -z "$yes" ]
+		then
+			xbps_extra_args="-y $xbps_extra_args"
 		fi
 
 		case "$name" in
