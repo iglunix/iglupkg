@@ -204,6 +204,11 @@ _x() {
 	n_deps=$(printf '%s\n' $@ | grep -v '>=' | awk '{printf $0">=0"}')
 	y_deps=$(printf '%s\n' $@ | grep '>=' || : )
 	cd "$outdir"
+	if [ -z "$desc" ]
+	then
+		desc="TODO"
+	fi
+
 	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel -s "$desc" -D "$n_deps $y_deps" "$pkgdir"
 }
 
