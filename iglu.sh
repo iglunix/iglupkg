@@ -2,6 +2,7 @@
 # usage: iglu [ add | del | has ] <pkg>
 #
 # options:
+#  -a <arch> target arch
 #  -r <dir> root dir
 
 fatal() {
@@ -33,16 +34,27 @@ case "$1" in
 		root_dir=
 		yes=
 		name=
+		xbps_arch=
 		while :
 		do
 			case "$1" in
+				-a)
+					shift
+					if [ ! -z "$1" ]
+					then
+						xbps_arch="$1"
+					else
+						fatal '-a requires an argument'
+					fi
+					shift
+					;;
 				-r)
 					shift
 					if [ ! -z "$1" ]
 					then
 						root_dir="$1"
 					else
-						fatal '-r requires argument'
+						fatal '-r requires an argument'
 					fi
 					shift
 					;;
@@ -69,6 +81,12 @@ case "$1" in
 		if [ ! -z "$yes" ]
 		then
 			xbps_extra_args="-y $xbps_extra_args"
+		fi
+
+		if [ ! -z "$xbps_arch" ]
+		then
+			export XBPS_ARCH="$xbps_arch"
+			export XBPS_TARGET_ARCH="$xbps_arch"
 		fi
 
 		case "$name" in
