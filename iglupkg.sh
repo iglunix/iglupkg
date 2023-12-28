@@ -204,7 +204,7 @@ _x() {
 	t_deps=$(printf '%s\n' $@ | grep -v '>=')
 	if [ ! -z "$t_deps" ]
 	then
-		n_deps=$(printf '%s\n' $@ | grep -v '>=' | awk '{printf $0">=0"}')
+		n_deps=$(printf '%s\n' $@ | grep -v '>=' | awk '{printf $0">=0 "}')
 	fi
 	y_deps=$(printf '%s\n' $@ | grep '>=' || : )
 	cd "$outdir"
