@@ -91,7 +91,8 @@ case "$1" in
 
 		case "$name" in
 			*.xbps)
-				REPO=/var/lib/iglu
+				REPO=/run/iglu
+				mkdir -p $REPO
 				cp "$name" "$REPO"
 				cd "$REPO"
 				rm -f *-repodata
@@ -99,6 +100,7 @@ case "$1" in
 				cd -
 				b_name=$(basename "$name" | cut -d'.' -f1 | rev | cut -d'-' -f2- | rev)
 				xbps-install $xbps_extra_args --repository="$REPO" "$b_name" -f
+				rm -rf $REPO
 				;;
 			*)
 				xbps-install "$name"
