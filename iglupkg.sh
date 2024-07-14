@@ -183,7 +183,7 @@ _f() {
 	rm -rf "$srcdir"
 	mkdir -p "$srcdir"
 	cd "$srcdir"
-	fetch
+	ifetch
 	cd "$srcdir"
 	:> .fetched
 }
