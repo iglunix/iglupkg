@@ -178,6 +178,18 @@ _genmeta() {
 	cd "$srcdir"
 }
 
+_shlib_requires() {
+	find . -type f '!' -type l | while read -r f
+	do
+		readelf --elf-output-style=LLVM "$f" 2>/dev/null >/dev/null || continue
+		readelf --needed-libs "$f" | grep -E -v '\[|\]'
+	done | sort | uniq | while read -r l
+	do
+		find . -name "$l" -exec false {} + || continue
+		printf '%s ' "$l"
+	done
+}
+
 _f() {
 	rm -rf "$pkgdir"
 	rm -rf "$srcdir"
@@ -213,7 +225,9 @@ _x() {
 		desc="TODO"
 	fi
 	set -x
-	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel -s "$desc" -D "$n_deps $y_deps" "$pkgdir"
+	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel \
+	--shlib-requires "$(_shlib_requires)" --shlib-provides "$shlibs" \
+	-s "$desc" -D "$n_deps $y_deps" "$pkgdir"
 	set +x
 }
 
