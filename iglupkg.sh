@@ -41,6 +41,11 @@ fatal() {
 	exit 1
 }
 
+error() {
+	echo "ERROR: $@"
+	exit 1
+}
+
 warn() {
 	echo "WARNING: $@"
 }
@@ -182,11 +187,25 @@ _shlib_requires() {
 	find . -type f '!' -type l | while read -r f
 	do
 		readelf --elf-output-style=LLVM "$f" 2>/dev/null >/dev/null || continue
+		if ! readelf -h "$f" | grep 'Type:' | grep 'DYN' >/dev/null 2>/dev/null
+		then
+			continue
+		fi
 		readelf --needed-libs "$f" | grep -E -v '\[|\]'
-	done | sort | uniq | while read -r l
+	done | sort -u | while read -r l
 	do
 		find . -name "$l" -exec false {} + || continue
 		printf '%s ' "$l"
+	done
+}
+
+_verify_shlibs() {
+	for shlib in "$shlibs"
+	do
+		if find . -name "$shlib" -exec false {} +
+		then
+			error "shlib $shlib is not provided"
+		fi
 	done
 }
 
@@ -224,11 +243,12 @@ _x() {
 	then
 		desc="TODO"
 	fi
-	set -x
+	# set -x
+	_verify_shlibs
 	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel \
 	--shlib-requires "$(_shlib_requires)" --shlib-provides "$shlibs" \
 	-s "$desc" -D "$n_deps $y_deps" "$pkgdir"
-	set +x
+	# set +x
 }
 
 _p() {
