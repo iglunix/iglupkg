@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 pkgrel=0
 muon_base_args="-Dbuildtype=release \
 -Dprefix=/usr \
@@ -53,37 +53,6 @@ warn() {
 to_run=
 while [ ! -z "$1" ]; do
 	case "$1" in
-		--with-cross=*)
-			ARCH=$(echo "$1" | cut -d'=' -f2)
-			[ -z "$ARCH" ] && fatal '--with-cross=<arch> requires an argument'
-			echo "INFO: cross compiling for $ARCH"
-			WITH_CROSS="$ARCH"
-			;;
-		--with-cross)
-			fatal '--with-cross=<arch> requires an argument'
-			;;
-		--with-cross-dir=*)
-			WITH_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
-			[ -z "$WITH_CROSS_DIR" ] && fatal '--with-cross-dir=<sysroot> requires an argument'
-			[ -d "$WITH_CROSS_DIR" ] 2>/dev/null || warn "$WITH_CROSS_DIR does not exist"
-			echo "INFO: using toolchain libraries from $WITH_CROSS_DIR"
-			;;
-		--with-cross-dir)
-			fatal '--with-cross-dir=<sysroot> requires an argument'
-			;;
-		--for-cross)
-			echo 'INFO: for cross'
-			FOR_CROSS=1
-			;;
-		--for-cross-dir=*)
-			FOR_CROSS_DIR_SET=1
-			FOR_CROSS_DIR=$(echo "$1" | cut -d'=' -f2)
-			#[ -z "$FOR_CROSS_DIR" ] && fatal '--for-cross-dir=<sysroot> requires an argument'
-			echo "INFO: packaging for prefix $FOR_CROSS_DIR"
-			;;
-		--for-cross-dir)
-			fatal '--for-cross-dir=<sysroot> requires an argument'
-			;;
 		fbp)
 			to_run="f b p"
 			;;
@@ -112,38 +81,17 @@ while [ ! -z "$1" ]; do
 	shift
 done
 
-[ -z "$WITH_CROSS_DIR" ] && WITH_CROSS_DIR=/usr/$ARCH-linux-musl
-[ -z "$FOR_CROSS_DIR_SET" ] && FOR_CROSS_DIR=/usr/$ARCH-linux-musl
-
 if [ -z "$ARCH" ]; then
 	export ARCH=$HOST_ARCH
 fi
 
-if [ ! -z "$FOR_CROSS" ]; then
-	cross=-$ARCH
-fi
 export TRIPLE="$ARCH-unknown-linux-musl"
 [ -z "$CC" ] && export CC=cc
 [ -z "$CXX" ] && export CXX=c++
 export AR=ar
 export RANLIB=ranlib
-export CROSS_EXTRA_LDFLAGS="--target=$TRIPLE --sysroot=$WITH_CROSS_DIR"
 export CFLAGS="-O3"
-export CROSS_EXTRA_CFLAGS="--target=$TRIPLE --sysroot=$WITH_CROSS_DIR"
 export CXXFLAGS=$CFLAGS
-export CROSS_EXTRA_CXXFLAGS="$CROSS_EXTRA_CFLAGS -nostdinc++ -isystem $WITH_CROSS_DIR/include/c++/v1/"
-
-auto_cross() {
-	if [ -z "$FOR_CROSS" ]; then
-		PREFIX=/usr
-	else
-		PREFIX=$FOR_CROSS_DIR
-	fi
-	[ -z "$WITH_CROSS" ] && return
-	export CFLAGS="$CFLAGS $CROSS_EXTRA_CFLAGS"
-	export CXXFLAGS="$CFLAGS $CROSS_EXTRA_CXXFLAGS"
-	export LDFLAGS="$CROSS_EXTRA_LDFLAGS"
-}
 
 export JOBS=$(nproc)
 
@@ -160,28 +108,9 @@ fi
 
 srcdir="$(pwd)/src"
 outdir="$(pwd)/out"
-pkgdir="$(pwd)/out/$pkgname$cross.$pkgver"
+pkgdir="$(pwd)/out/install.$pkgver"
 
 [ -d "$pkgdir" ] || warn "package already built. Pass f b or p."
-
-_genmeta() {
-	echo "[pkg]"
-	echo "pkgname=$pkgname"
-	echo "pkgver=$pkgver"
-	echo "deps=$deps"
-	echo ""
-	echo "[license]"
-	license
-	echo ""
-	echo "[backup]"
-	backup
-	echo ""
-	echo "[fs]"
-
-	cd "$pkgdir"
-	find *
-	cd "$srcdir"
-}
 
 _shlib_requires() {
 	find . -type f '!' -type l | while read -r f
@@ -228,42 +157,55 @@ _b() {
 	:> .built
 }
 
-_x() {
-	cd "$srcdir"
-	all_deps="$deps:$rdeps"
-	IFS=: set -- $all_deps
-	t_deps=$(printf '%s\n' $@ | grep -v '>=')
-	if [ ! -z "$t_deps" ]
-	then
-		n_deps=$(printf '%s\n' $@ | grep -v '>=' | awk '{printf $0">=0 "}')
-	fi
-	y_deps=$(printf '%s\n' $@ | grep '>=' || : )
-	cd "$outdir"
-	if [ -z "$desc" ]
-	then
-		desc="TODO"
-	fi
-	# set -x
-	_verify_shlibs
-	xbps-create -A $ARCH-musl -n $pkgname-$pkgver\_$pkgrel \
-	--shlib-requires "$(_shlib_requires)" --shlib-provides "$shlibs" \
-	-s "$desc" -D "$n_deps $y_deps" "$pkgdir"
-	# set +x
-}
-
 _p() {
 	rm -rf "$pkgdir"
 	cd "$srcdir"
 	[ -f .built ] || fatal 'must build before packaging'
 	mkdir -p "$pkgdir"
 	package
-	install -d "$pkgdir/usr/share/iglupkg/"
-	cd "$srcdir"
-	_genmeta > "$pkgdir/usr/share/iglupkg/$pkgname$cross"
-	if command -V xbps-create
-	then
-		_x
-	fi
+
+	for subpkg in $subpkgs
+	do
+		cd "$pkgdir"
+
+		subpkgdir="$outdir/$subpkg.$pkgver"
+		mkdir -p "$outdir/$subpkg.$pkgver"
+
+		shlibs=
+		deps=
+		san_deps=
+		command -V $subpkg | grep function >/dev/null || error "function for $subpkg not found"
+		$subpkg >/dev/null
+
+		for dep in $deps
+		do
+			if printf '%s\n' "$dep" | grep '\(==\)\|\(>=\)\|\(=\)' >/dev/null
+			then
+				san_deps="$san_deps $dep"
+			elif printf '%s\n' $subpkgs | grep '^'"$dep"'$'
+			then
+				san_deps="$san_deps $dep-$pkgver""_$pkgrel"
+			else
+				san_deps="$san_deps $dep>=0"
+			fi
+		done
+
+		$subpkg | while read -r subpkg_file
+		do
+			[ -d "$subpkg_file" ] && continue
+			file_dir=$(dirname "$subpkgdir/$subpkg_file")
+			mkdir -p "$file_dir"
+			mv "$subpkg_file" "$file_dir"
+		done
+		cd $subpkgdir
+		[ -z "$shlibs" ] || _verify_shlibs
+		[ -z "$desc" ] && desc="TODO"
+		shlib_requires="$(_shlib_requires)"
+		cd $outdir
+		xbps-create -A $ARCH-musl -n $subpkg-$pkgver\_$pkgrel \
+			--shlib-requires "$shlib_requires" --shlib-provides "$shlibs" \
+			-s "$desc" -D "$san_deps" $subpkgdir
+	done
 }
 
 if [ -z "$to_run" ]; then
